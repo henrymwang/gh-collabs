@@ -133,7 +133,7 @@ class App extends Component {
 
   handleSearch() {
     const value = this.textInput.current.value;
-    this.setState({depth: 0});
+    this.setState({depth: 0, nodes: [], links: [], nextToExpand: [], expanded: []});
     this.getUser(value)
       .then(({login, followers, following, avatar_url}) => {
         // destructure obj to access those fields
@@ -246,7 +246,7 @@ class App extends Component {
         <Row>
           <Col>
           {
-             (this.state.nodes.length > 0 && this.state.depth < 3) && (
+             (this.state.nodes.length > 0 && this.state.depth < 2) && (
                <div>
                 <Button variant="outline-secondary" onClick={_ => this.handleIncrDepth()}>
                   Increase Depth
