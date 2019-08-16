@@ -261,6 +261,7 @@ class App extends Component {
       </Container>
       <Container>
         <div id="svg-container">
+          <svg width={400} height={400} viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
       </Container>
       </div>

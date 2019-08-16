@@ -47,9 +47,44 @@ text {
   font-size: 10px;
 }
 
-#svg-container {
+/* #svg-container {
   display: flex;
   align-items: center;
   background-color: lightblue;
   height: 100%;
+} */
+
+
+
+#svg-container {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    height: 400px;
+    /* padding-bottom: 100%; */
+    vertical-align: top;
+    overflow: hidden;
+    background-color: lightblue;
+}
+.svg-content {
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%
+}
+
+
+.view {
+  fill: url(#gradient);
+  stroke: #000;
+}
+
+.axis path {
+  display: none;
+}
+
+.axis line {
+  stroke-opacity: 0.3;
+  shape-rendering: crispEdges;
 }
