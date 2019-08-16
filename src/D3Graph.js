@@ -32,8 +32,7 @@ class D3Graph extends Component {
   }
 
   drawChart(c) {
-    const w = 600;
-    const h = 400;
+    const w = 800, h = 800;
     const color = schemeCategory10;
     const svg = d3.select('#svg-container')
     .append('svg')
