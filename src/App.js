@@ -180,6 +180,20 @@ class App extends Component {
       );
     }
 
+    let libraries = [
+      {name: "React.js", href: "https://reactjs.org/"},
+      {name: "D3.js (v5)", href: "https://d3js.org/"},
+      {name: "React-Bootstrap (Boostrap v4)", href: "https://react-bootstrap.github.io/"},
+      {name: "Github API", href: "https://developer.github.com/v3/"}
+    ].map(({name, href}) => {
+      return (
+        <span key={name}>
+          <a href={href}>{name}</a>
+          <br/>
+        </span>
+      )
+    });
+
     return (
       <div className="App">
       <Container>
@@ -195,7 +209,7 @@ class App extends Component {
                   <InputGroup.Text id="basic-addon1">@</InputGroup.Text>
                 </InputGroup.Prepend>
                 <FormControl
-                  placeholder="Username"
+                  placeholder="Username (ex. henrymwang)"
                   aria-label="Username"
                   aria-describedby="basic-addon1"
                   ref={this.textInput}
@@ -250,6 +264,13 @@ class App extends Component {
         <div id="svg-container">
           <svg width={400} height={400} viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
+      </Container>
+      <Container>
+        <footer className="blockquote-footer">
+          Made with
+          <br/>
+          { libraries }.
+        </footer>
       </Container>
       </div>
     );
