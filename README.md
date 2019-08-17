@@ -1,5 +1,13 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## React + D3.js + Github API
+
+This project combines React.js with D3.js to create an interactive force-directed graph.
+Data comes from Github's API for info about a user's followers.
+Made with React.js, D3.js, and Bootstrap.
+
+Topics explored: `async/await`, concurrently handling promises, component lifecycle
+
 ## Available Scripts
 
 In the project directory, you can run:
