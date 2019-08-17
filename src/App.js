@@ -19,33 +19,22 @@ const idToNodeObj = (d) => {
 }
 
 const generateNodesLinksNext = (res, nodes, links, expanded) => {
-  // console.log('res',res);
-  // console.log(nodes);
-  // console.log(links);
-  // console.log(expanded);
   // set the new nodes
   // retrieve the new followers we just got
   let newNodes = res.reduce((acc, curr) => {
     return acc.concat(curr.targets);
   }, []);
-  // console.log('newNodes', newNodes);
   // union by id
   newNodes = _.unionBy(nodes, newNodes, 'id');
-  // console.log(newNodes);
-
   // update new links
   let newLinks = res.reduce((acc, curr) => {
     return acc.concat(curr.targets.map(({id}) => ({source: curr.id, target: id})));
   }, links);
-  // console.log(newLinks);
   // filter out unique links since a -> b but b -> a could be a possiblity
   let uniqLinks = _.uniqWith(newLinks, (a, b) => {
     return (a.source === b.source && a.target === b.target) ||
     (a.source === b.target && a.target === b.source)
   });
-  // console.log(uniqLinks);
-
-  // bug: expanded will be out of date because this.getFollowers() - FIXED
   // nextNodes to expand are the followers - expanded nodes
   let nextNodes = res.reduce((acc, curr) => {
     return acc.concat(curr.targets.filter(({id}) => !expanded.has(id)));
@@ -150,7 +139,6 @@ class App extends Component {
           .catch(err => {
             // TODO: display user not found
             this.setState({searchResults: {}});
-            console.log(err);
           });
       })
       ;
