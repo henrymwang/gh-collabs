@@ -11,41 +11,47 @@ import * as _ from 'lodash';
 
 import D3Graph from './D3Graph';
 
+
 const base = 'https://api.github.com'
 
-// const depth = 3;
+const idToNodeObj = (d) => {
+  return {id: d.login}
+}
 
-// const graph = {};
-
-const updateNodes = (existingNodes, newIDs) => {
-  console.log('newIDs', newIDs);
-  let newNodes = newIDs.map(githubID => ({id: githubID}));
-  console.log('New', newNodes);
-  return _.unionBy([...existingNodes], [...newNodes], 'id');
-};
-
-const updateLinks = (existingLinks, res) => {
-  let newLinks = res.reduce((acc, curr) => {
-    return acc.concat(curr.targets.map(targetID => {
-      return {source: curr.id, target: targetID}
-    }))
+const generateNodesLinksNext = (res, nodes, links, expanded) => {
+  // console.log('res',res);
+  // console.log(nodes);
+  // console.log(links);
+  // console.log(expanded);
+  // set the new nodes
+  // retrieve the new followers we just got
+  let newNodes = res.reduce((acc, curr) => {
+    return acc.concat(curr.targets);
   }, []);
+  // console.log('newNodes', newNodes);
+  // union by id
+  newNodes = _.unionBy(nodes, newNodes, 'id');
+  // console.log(newNodes);
 
-  // links could be duplicated
-  let allLinks = _.union(existingLinks, newLinks);
-
-  let uniqLinks = _.uniqWith(allLinks, (a, b) => {
-    return a.source === b.source && a.target === b.target
+  // update new links
+  let newLinks = res.reduce((acc, curr) => {
+    return acc.concat(curr.targets.map(({id}) => ({source: curr.id, target: id})));
+  }, links);
+  // console.log(newLinks);
+  // filter out unique links since a -> b but b -> a could be a possiblity
+  let uniqLinks = _.uniqWith(newLinks, (a, b) => {
+    return (a.source === b.source && a.target === b.target) ||
+    (a.source === b.target && a.target === b.source)
   });
+  // console.log(uniqLinks);
 
-  return uniqLinks;
+  // bug: expanded will be out of date because this.getFollowers() - FIXED
+  // nextNodes to expand are the followers - expanded nodes
+  let nextNodes = res.reduce((acc, curr) => {
+    return acc.concat(curr.targets.filter(({id}) => !expanded.has(id)));
+  }, []);
+  return {newNodes: newNodes, uniqLinks: uniqLinks, nextNodes: nextNodes};
 }
-
-const updateNextToExpand = (expanded, nextToExpand, newNodes) => {
-  // let nextNodes = updateNextToExpand(expanded, nextToExpand, nextIDs);
-  return _.difference(newNodes.map(d => d.id), nextToExpand, expanded);
-}
-
 
 class App extends Component {
   constructor(props) {
@@ -59,7 +65,7 @@ class App extends Component {
       nodes: [], // {id: "abc"}, must be unique
       links: [], // {source: "abc", target: "def"}
       nextToExpand: [], //["henrymwang"] used to keep track of next nodes to expand
-      expanded: [], // ["henrymwang"] TODO: change to hashmap
+      expanded: new Set(),
       depth: 0
     };
   }
@@ -84,36 +90,22 @@ class App extends Component {
     if (prevState.depth !== this.state.depth) {
       // update nodes
       const { nextToExpand, nodes, expanded, links } = this.state;
-      console.log('Exp', expanded);
-
-      console.log('NextToExpand', nextToExpand);
-      // let nextIDs = nextToExpand.map(node => node.id);
+      // in format [{id: "a"}, ...]
+      // return format [{id: "abc", targets: [{id: "a"}, {id: "b"}]}]
       let res = await Promise.all(nextToExpand.map(
-        async id => {
+        async ({id}) => {
           // could also do return this.getFollowers(id);
           let jsonArr = await this.getFollowers(id);
-          let targets = jsonArr.map(json => json.login);
-          return {id: id, targets: targets};
+          // have to await again...!!!
+          let targets = await jsonArr.map(idToNodeObj);
+          // mark as expanded
+          expanded.add(id);
+          return {id: id, targets: await targets};
         }
       ));
 
-      console.log('Res',res);
-
-      let newIDs = res.reduce((acc, curr) => {
-        return acc.concat(curr.targets);
-      }, []);
-      // console.log(newIDs);
-      let newNodes = updateNodes(nodes, newIDs);
-      console.log(newNodes);
-
-      let newLinks = updateLinks(links, res);
-
-      // bug: expanded will be out of date because this.getFollowers()
-      // updates this.state.expanded
-      let nextNodes = updateNextToExpand(expanded, nextToExpand, newNodes);
-
-      console.log('Next Nodes', nextNodes);
-      this.setState({nodes: newNodes, links: newLinks, nextToExpand: nextNodes});
+      let {newNodes, uniqLinks, nextNodes} = generateNodesLinksNext(res, nodes, links, expanded);
+      this.setState({nodes: newNodes, links: uniqLinks, nextToExpand: nextNodes});
     }
   }
 
@@ -123,17 +115,9 @@ class App extends Component {
     });
   }
 
-  generateNodesLinks(res, githubID) {
-    const nodes = res.map(d => ({id: d.login}));
-    this.setState(prevState => ({ expanded: [...this.state.expanded, githubID] }));
-    this.setState({nextToExpand: [...res].map(d => d.login)});
-    const links = res.map(d => ({source: githubID, target: d.login}));
-    return [[...nodes], [...links]];
-  }
-
   handleSearch() {
     const value = this.textInput.current.value;
-    this.setState({depth: 0, nodes: [], links: [], nextToExpand: [], expanded: []});
+    this.setState({depth: 0, nodes: [], links: [], nextToExpand: [], expanded: new Set()});
     this.getUser(value)
       .then(({login, followers, following, avatar_url}) => {
         // destructure obj to access those fields
@@ -149,16 +133,19 @@ class App extends Component {
       .catch(err => {
         // TODO: display user not found
         this.setState({searchResults: {}});
-        console.log(err);
       })
       .then(githubID => {
         this.getFollowers(githubID)
           .then(res => {
-            const [nodes, links] = this.generateNodesLinks(res, githubID);
-            console.log(nodes);
-            let allNodes = [...nodes];
-            allNodes.unshift({id: githubID}); // add myself to front
-            this.setState({nodes: allNodes, links: links});
+            let constructedRes = {id: githubID, targets: res.map(({login}) => ({id: login}))};
+            this.setState(({nodes, links, expanded}) => {
+              // mark as expanded
+              expanded.add(githubID);
+              let {newNodes, uniqLinks, nextNodes} = generateNodesLinksNext([constructedRes], nodes, links, expanded);
+              newNodes = newNodes.concat({id: githubID});
+              // need to add myself the first time
+              return {nodes: newNodes, links: uniqLinks, nextToExpand: nextNodes};
+            });
           })
           .catch(err => {
             // TODO: display user not found

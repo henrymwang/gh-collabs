@@ -50,7 +50,7 @@ class D3Graph extends Component {
       //   .attr("r", 8)
       //   .merge(node);
 
-      var enter = node.enter().append('g')
+      let enter = node.enter().append('g')
         .attr('class', 'node')
 
       let labels = enter.append('text')
