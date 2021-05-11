@@ -7,7 +7,7 @@
     "d3": "^5.9.7",
     "d3-scale-chromatic": "^1.4.0",
     "d3-zoom": "^1.8.3",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "react": "^16.9.0",
     "react-bootstrap": "^1.0.0-beta.11",
     "react-dom": "^16.9.0",
